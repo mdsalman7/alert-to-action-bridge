@@ -6,317 +6,300 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, Plus, Settings, ArrowLeft, Server, Database, Globe, Zap } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Users, Plus, Building, Settings, Activity, ChevronRight } from 'lucide-react';
 
-interface CustomerProfile {
-  id: string;
-  companyName: string;
-  contactPerson: string;
-  email: string;
-  phone?: string;
-  description?: string;
-  resources: CustomerResource[];
-  createdAt: string;
-}
-
-interface CustomerResource {
+interface Customer {
   id: string;
   name: string;
-  type: 'ec2' | 'rds' | 'ecs' | 'eks' | 'lambda' | 'sqs' | 'sns' | 'apigateway';
-  status: 'healthy' | 'warning' | 'critical';
-  region: string;
+  email: string;
+  phone: string;
+  industry: string;
+  status: 'active' | 'inactive';
+  totalResources: number;
+  totalMonitors: number;
+  serviceIntegrations: ServiceIntegration[];
   createdAt: string;
 }
 
-const CustomerManagement: React.FC = () => {
-  const [customers, setCustomers] = useState<CustomerProfile[]>([
+interface ServiceIntegration {
+  id: string;
+  name: string;
+  type: string;
+  status: 'enabled' | 'disabled';
+  count: number;
+  icon: string;
+}
+
+const CustomerManagement = () => {
+  const [customers, setCustomers] = useState<Customer[]>([
     {
-      id: 'customer-1',
-      companyName: 'TechCorp Solutions',
-      contactPerson: 'John Smith',
-      email: 'john.smith@techcorp.com',
+      id: 'cust-1',
+      name: 'Acme Corporation',
+      email: 'admin@acme.com',
       phone: '+1-555-0123',
-      description: 'E-commerce platform with high-traffic requirements',
-      resources: [
-        { id: 'res-1', name: 'Web Server', type: 'ec2', status: 'healthy', region: 'us-east-1', createdAt: new Date().toISOString() },
-        { id: 'res-2', name: 'Main Database', type: 'rds', status: 'warning', region: 'us-east-1', createdAt: new Date().toISOString() }
+      industry: 'Technology',
+      status: 'active',
+      totalResources: 15,
+      totalMonitors: 23,
+      serviceIntegrations: [
+        { id: '1', name: 'SQS Queue', type: 'messaging', status: 'enabled', count: 11, icon: '📨' },
+        { id: '2', name: 'ECS Cluster Service', type: 'container', status: 'enabled', count: 8, icon: '🐳' },
+        { id: '3', name: 'EBS Volume', type: 'storage', status: 'enabled', count: 1, icon: '💾' },
+        { id: '4', name: 'OpenSearch', type: 'search', status: 'disabled', count: 1, icon: '🔍' },
+        { id: '5', name: 'RDS Instance', type: 'database', status: 'disabled', count: 1, icon: '🗄️' },
+        { id: '6', name: 'ECS Cluster', type: 'container', status: 'disabled', count: 1, icon: '🏗️' },
+        { id: '7', name: 'EC2 Instance', type: 'compute', status: 'disabled', count: 1, icon: '🖥️' },
+        { id: '8', name: 'OpenSearch Nodes', type: 'search', status: 'disabled', count: 0, icon: '🔍' }
+      ],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'cust-2',
+      name: 'TechStart Solutions',
+      email: 'contact@techstart.com',
+      phone: '+1-555-0456',
+      industry: 'Software',
+      status: 'active',
+      totalResources: 8,
+      totalMonitors: 12,
+      serviceIntegrations: [
+        { id: '1', name: 'SQS Queue', type: 'messaging', status: 'enabled', count: 5, icon: '📨' },
+        { id: '2', name: 'ECS Cluster Service', type: 'container', status: 'enabled', count: 3, icon: '🐳' },
+        { id: '3', name: 'EBS Volume', type: 'storage', status: 'disabled', count: 2, icon: '💾' },
+        { id: '4', name: 'OpenSearch', type: 'search', status: 'disabled', count: 0, icon: '🔍' },
+        { id: '5', name: 'RDS Instance', type: 'database', status: 'enabled', count: 1, icon: '🗄️' },
+        { id: '6', name: 'ECS Cluster', type: 'container', status: 'disabled', count: 0, icon: '🏗️' },
+        { id: '7', name: 'EC2 Instance', type: 'compute', status: 'enabled', count: 2, icon: '🖥️' },
+        { id: '8', name: 'OpenSearch Nodes', type: 'search', status: 'disabled', count: 0, icon: '🔍' }
       ],
       createdAt: new Date().toISOString()
     }
   ]);
 
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerProfile | null>(null);
-  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
-  const [showAddResource, setShowAddResource] = useState(false);
-  
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [newCustomer, setNewCustomer] = useState({
-    companyName: '',
-    contactPerson: '',
+    name: '',
     email: '',
     phone: '',
-    description: ''
+    industry: ''
   });
 
-  const [newResource, setNewResource] = useState({
-    name: '',
-    type: 'ec2' as const,
-    region: 'us-east-1'
-  });
+  const handleAddCustomer = () => {
+    if (!newCustomer.name || !newCustomer.email) return;
 
-  const handleCreateCustomer = () => {
-    if (!newCustomer.companyName || !newCustomer.contactPerson || !newCustomer.email) return;
-
-    const customer: CustomerProfile = {
-      id: `customer-${Date.now()}`,
-      companyName: newCustomer.companyName,
-      contactPerson: newCustomer.contactPerson,
+    const customer: Customer = {
+      id: `cust-${Date.now()}`,
+      name: newCustomer.name,
       email: newCustomer.email,
       phone: newCustomer.phone,
-      description: newCustomer.description,
-      resources: [],
+      industry: newCustomer.industry,
+      status: 'active',
+      totalResources: 0,
+      totalMonitors: 0,
+      serviceIntegrations: [
+        { id: '1', name: 'SQS Queue', type: 'messaging', status: 'disabled', count: 0, icon: '📨' },
+        { id: '2', name: 'ECS Cluster Service', type: 'container', status: 'disabled', count: 0, icon: '🐳' },
+        { id: '3', name: 'EBS Volume', type: 'storage', status: 'disabled', count: 0, icon: '💾' },
+        { id: '4', name: 'OpenSearch', type: 'search', status: 'disabled', count: 0, icon: '🔍' },
+        { id: '5', name: 'RDS Instance', type: 'database', status: 'disabled', count: 0, icon: '🗄️' },
+        { id: '6', name: 'ECS Cluster', type: 'container', status: 'disabled', count: 0, icon: '🏗️' },
+        { id: '7', name: 'EC2 Instance', type: 'compute', status: 'disabled', count: 0, icon: '🖥️' },
+        { id: '8', name: 'OpenSearch Nodes', type: 'search', status: 'disabled', count: 0, icon: '🔍' }
+      ],
       createdAt: new Date().toISOString()
     };
 
     setCustomers(prev => [...prev, customer]);
-    setNewCustomer({ companyName: '', contactPerson: '', email: '', phone: '', description: '' });
-    setShowCreateCustomer(false);
+    setNewCustomer({ name: '', email: '', phone: '', industry: '' });
+    setShowAddCustomer(false);
   };
 
-  const handleAddResource = () => {
-    if (!selectedCustomer || !newResource.name) return;
-
-    const resource: CustomerResource = {
-      id: `res-${Date.now()}`,
-      name: newResource.name,
-      type: newResource.type,
-      status: 'healthy',
-      region: newResource.region,
-      createdAt: new Date().toISOString()
-    };
-
-    setCustomers(prev => prev.map(customer => 
-      customer.id === selectedCustomer.id 
-        ? { ...customer, resources: [...customer.resources, resource] }
-        : customer
-    ));
-
-    setSelectedCustomer(prev => prev ? { ...prev, resources: [...prev.resources, resource] } : null);
-    setNewResource({ name: '', type: 'ec2', region: 'us-east-1' });
-    setShowAddResource(false);
-  };
-
-  const getResourceIcon = (type: string) => {
-    switch (type) {
-      case 'ec2': return <Server className="h-4 w-4" />;
-      case 'rds': return <Database className="h-4 w-4" />;
-      case 'lambda': return <Zap className="h-4 w-4" />;
-      case 'apigateway': return <Globe className="h-4 w-4" />;
-      default: return <Server className="h-4 w-4" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'healthy': return 'secondary';
-      case 'warning': return 'default';
-      case 'critical': return 'destructive';
-      default: return 'outline';
-    }
+  const toggleServiceIntegration = (customerId: string, serviceId: string) => {
+    setCustomers(prev => prev.map(customer => {
+      if (customer.id === customerId) {
+        return {
+          ...customer,
+          serviceIntegrations: customer.serviceIntegrations.map(service => {
+            if (service.id === serviceId) {
+              return {
+                ...service,
+                status: service.status === 'enabled' ? 'disabled' : 'enabled'
+              };
+            }
+            return service;
+          })
+        };
+      }
+      return customer;
+    }));
   };
 
   if (selectedCustomer) {
     return (
       <div className="space-y-6">
-        {/* Customer Detail Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => setSelectedCustomer(null)}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Customers
-            </Button>
-            <div>
-              <h2 className="text-2xl font-bold">{selectedCustomer.companyName}</h2>
-              <p className="text-gray-600">{selectedCustomer.resources.length} resources</p>
-            </div>
-          </div>
-          <Button onClick={() => setShowAddResource(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Resource
+        <div className="flex items-center gap-2 mb-4">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setSelectedCustomer(null)}
+          >
+            ← Back to Customers
           </Button>
+          <span className="text-sm text-gray-500">•</span>
+          <span className="font-medium">{selectedCustomer.name}</span>
         </div>
 
-        {/* Customer Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Contact Person</label>
-                <p className="font-medium">{selectedCustomer.contactPerson}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Email</label>
-                <p className="font-medium">{selectedCustomer.email}</p>
-              </div>
-              {selectedCustomer.phone && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Phone</label>
-                  <p className="font-medium">{selectedCustomer.phone}</p>
-                </div>
-              )}
-              {selectedCustomer.description && (
-                <div className="md:col-span-2">
-                  <label className="text-sm font-medium text-gray-500">Description</label>
-                  <p className="font-medium">{selectedCustomer.description}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="integrations">Service Integrations</TabsTrigger>
+            <TabsTrigger value="resources">Resources</TabsTrigger>
+          </TabsList>
 
-        {/* Add Resource Form */}
-        {showAddResource && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Add New Resource</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Resource Name</label>
-                  <Input
-                    placeholder="e.g., Web Server"
-                    value={newResource.name}
-                    onChange={(e) => setNewResource(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Resource Type</label>
-                  <Select value={newResource.type} onValueChange={(value: any) => setNewResource(prev => ({ ...prev, type: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ec2">EC2 Instance</SelectItem>
-                      <SelectItem value="rds">RDS Database</SelectItem>
-                      <SelectItem value="ecs">ECS Service</SelectItem>
-                      <SelectItem value="eks">EKS Cluster</SelectItem>
-                      <SelectItem value="lambda">Lambda Function</SelectItem>
-                      <SelectItem value="sqs">SQS Queue</SelectItem>
-                      <SelectItem value="sns">SNS Topic</SelectItem>
-                      <SelectItem value="apigateway">API Gateway</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Region</label>
-                  <Select value={newResource.region} onValueChange={(value) => setNewResource(prev => ({ ...prev, region: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="us-east-1">US East (N. Virginia)</SelectItem>
-                      <SelectItem value="us-west-2">US West (Oregon)</SelectItem>
-                      <SelectItem value="eu-west-1">Europe (Ireland)</SelectItem>
-                      <SelectItem value="ap-south-1">Asia Pacific (Mumbai)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-4">
-                <Button onClick={handleAddResource}>Add Resource</Button>
-                <Button variant="outline" onClick={() => setShowAddResource(false)}>Cancel</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Resources List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Resources ({selectedCustomer.resources.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {selectedCustomer.resources.map((resource) => (
-                <div key={resource.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getResourceIcon(resource.type)}
+          <TabsContent value="overview">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Customer Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
                     <div>
-                      <div className="font-medium">{resource.name}</div>
-                      <div className="text-sm text-gray-500">{resource.type.toUpperCase()} • {resource.region}</div>
+                      <label className="text-sm font-medium text-gray-600">Customer Name</label>
+                      <p className="text-lg font-semibold">{selectedCustomer.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Email</label>
+                      <p>{selectedCustomer.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Phone</label>
+                      <p>{selectedCustomer.phone}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Industry</label>
+                      <p>{selectedCustomer.industry}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getStatusColor(resource.status)}>
-                      {resource.status}
-                    </Badge>
-                    <Button size="sm" variant="ghost">
-                      <Settings className="h-4 w-4" />
-                    </Button>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Card>
+                        <CardContent className="p-4 text-center">
+                          <div className="text-2xl font-bold text-blue-600">{selectedCustomer.totalResources}</div>
+                          <div className="text-sm text-gray-600">Total Resources</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="p-4 text-center">
+                          <div className="text-2xl font-bold text-green-600">{selectedCustomer.totalMonitors}</div>
+                          <div className="text-sm text-gray-600">Active Monitors</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Status</label>
+                      <div className="mt-1">
+                        <Badge variant={selectedCustomer.status === 'active' ? 'default' : 'secondary'}>
+                          {selectedCustomer.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ))}
-              {selectedCustomer.resources.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No resources added yet. Click "Add Resource" to get started.
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="integrations">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Service Integrations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {selectedCustomer.serviceIntegrations.map((service) => (
+                    <Card key={service.id} className="text-center p-4">
+                      <div className="text-2xl mb-2">{service.icon}</div>
+                      <div className="font-medium text-sm mb-1">{service.name}</div>
+                      <div className="text-lg font-bold mb-2">{service.count}</div>
+                      <Button 
+                        size="sm" 
+                        variant={service.status === 'enabled' ? 'default' : 'outline'}
+                        className="text-xs"
+                        onClick={() => toggleServiceIntegration(selectedCustomer.id, service.id)}
+                      >
+                        {service.status === 'enabled' ? 'Disable Integration' : 'Enable Integration'}
+                      </Button>
+                    </Card>
+                  ))}
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="resources">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Customer Resources
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-gray-500">
+                  <Activity className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No resources configured yet.</p>
+                  <p className="text-sm">Resources will appear here once configured for this customer.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Add Customer Form */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
+              <Users className="h-5 w-5" />
               Customer Management
             </CardTitle>
-            <Button onClick={() => setShowCreateCustomer(!showCreateCustomer)}>
+            <Button onClick={() => setShowAddCustomer(!showAddCustomer)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Customer
             </Button>
           </div>
         </CardHeader>
-        
-        {showCreateCustomer && (
+        {showAddCustomer && (
           <CardContent>
-            <div className="space-y-4 border-t pt-4">
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Company Name *</label>
+                  <label className="text-sm font-medium mb-2 block">Customer Name *</label>
                   <Input
-                    placeholder="e.g., TechCorp Solutions"
-                    value={newCustomer.companyName}
-                    onChange={(e) => setNewCustomer(prev => ({ ...prev, companyName: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Contact Person *</label>
-                  <Input
-                    placeholder="e.g., John Smith"
-                    value={newCustomer.contactPerson}
-                    onChange={(e) => setNewCustomer(prev => ({ ...prev, contactPerson: e.target.value }))}
+                    placeholder="e.g., Acme Corporation"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer(prev => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Email *</label>
                   <Input
                     type="email"
-                    placeholder="contact@company.com"
+                    placeholder="admin@company.com"
                     value={newCustomer.email}
                     onChange={(e) => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
                   />
@@ -329,50 +312,79 @@ const CustomerManagement: React.FC = () => {
                     onChange={(e) => setNewCustomer(prev => ({ ...prev, phone: e.target.value }))}
                   />
                 </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Description</label>
-                <Textarea
-                  placeholder="Brief description of the customer's business or requirements..."
-                  value={newCustomer.description}
-                  onChange={(e) => setNewCustomer(prev => ({ ...prev, description: e.target.value }))}
-                />
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Industry</label>
+                  <Select value={newCustomer.industry} onValueChange={(value) => setNewCustomer(prev => ({ ...prev, industry: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="technology">Technology</SelectItem>
+                      <SelectItem value="finance">Finance</SelectItem>
+                      <SelectItem value="healthcare">Healthcare</SelectItem>
+                      <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleCreateCustomer}>Create Customer</Button>
-                <Button variant="outline" onClick={() => setShowCreateCustomer(false)}>Cancel</Button>
+                <Button onClick={handleAddCustomer}>Add Customer</Button>
+                <Button variant="outline" onClick={() => setShowAddCustomer(false)}>Cancel</Button>
               </div>
             </div>
           </CardContent>
         )}
       </Card>
 
-      {/* Customers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {customers.map((customer) => (
-          <Card 
-            key={customer.id} 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setSelectedCustomer(customer)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">{customer.companyName}</h3>
-                  <p className="text-sm text-gray-600">{customer.contactPerson}</p>
-                  <p className="text-sm text-gray-500">{customer.email}</p>
+      {/* Customers List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Customers ({customers.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {customers.map((customer) => (
+              <div 
+                key={customer.id} 
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => setSelectedCustomer(customer)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1">
+                    <Building className="h-8 w-8 text-blue-600" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-lg">{customer.name}</h3>
+                        <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                          {customer.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                        <span>{customer.email}</span>
+                        <span>{customer.phone}</span>
+                        <span>{customer.industry}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="text-blue-600 font-medium">{customer.totalResources} Resources</span>
+                        <span className="text-green-600 font-medium">{customer.totalMonitors} Monitors</span>
+                        <span className="text-purple-600 font-medium">
+                          {customer.serviceIntegrations.filter(s => s.status === 'enabled').length} Integrations
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
                 </div>
-                <Building2 className="h-5 w-5 text-gray-400" />
               </div>
-              
-              <div className="flex items-center justify-between pt-2 border-t">
-                <span className="text-sm text-gray-600">Resources:</span>
-                <Badge variant="outline">{customer.resources.length}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

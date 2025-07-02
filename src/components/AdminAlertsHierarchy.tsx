@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,7 +61,7 @@ const AdminAlertsHierarchy = () => {
   const [selectedResource, setSelectedResource] = useState<InfrastructureResource | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorDetail | null>(null);
 
-  // Sample data
+  // Enhanced sample data with more detailed monitoring information
   const customers: Customer[] = [
     {
       id: 'cust-1',
@@ -87,6 +86,7 @@ const AdminAlertsHierarchy = () => {
     }
   ];
 
+  // Enhanced infrastructure resources with detailed monitoring metrics
   const infrastructureResources: InfrastructureResource[] = [
     {
       id: 'infra-1',
@@ -126,9 +126,36 @@ const AdminAlertsHierarchy = () => {
       downMonitors: 0,
       warningMonitors: 0,
       criticalMonitors: 0
+    },
+    {
+      id: 'infra-4',
+      name: 'Load Balancer',
+      type: 'Application Load Balancer',
+      provider: 'aws',
+      status: 'up',
+      customerId: 'cust-1',
+      monitorCount: 2,
+      upMonitors: 2,
+      downMonitors: 0,
+      warningMonitors: 0,
+      criticalMonitors: 0
+    },
+    {
+      id: 'infra-5',
+      name: 'CDN Distribution',
+      type: 'CloudFront',
+      provider: 'aws',
+      status: 'warning',
+      customerId: 'cust-1',
+      monitorCount: 1,
+      upMonitors: 0,
+      downMonitors: 0,
+      warningMonitors: 1,
+      criticalMonitors: 0
     }
   ];
 
+  // Enhanced service integrations with more detailed metrics
   const serviceIntegrations: ServiceIntegration[] = [
     { id: '1', name: 'SQS Queue', type: 'messaging', status: 'enabled', count: 11, icon: '📨' },
     { id: '2', name: 'ECS Cluster Service', type: 'container', status: 'enabled', count: 8, icon: '🐳' },
@@ -279,33 +306,114 @@ const AdminAlertsHierarchy = () => {
         <span className="font-medium">{selectedCustomer?.name}</span>
       </div>
 
-      {/* Customer Overview Card */}
-      <Card className="border-l-4 border-l-blue-500">
+      {/* Customer Overview with Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-blue-700">100%</div>
+            <div className="text-sm text-blue-600">Availability</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-700">0</div>
+            <div className="text-sm text-green-600">Downtime</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-700">0.1%</div>
+            <div className="text-sm text-yellow-600">CPU Utilization</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-purple-700">11.72%</div>
+            <div className="text-sm text-purple-600">Memory Utilization</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Events Timeline */}
+      <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" />
-            {selectedCustomer?.name} - Service Integrations
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">Events Timeline</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {serviceIntegrations.map((service) => (
-              <Card key={service.id} className="text-center p-3">
-                <div className="text-2xl mb-2">{service.icon}</div>
-                <div className="font-medium text-sm mb-1">{service.name}</div>
-                <div className="text-lg font-bold mb-2">{service.count}</div>
-                <Button 
-                  size="sm" 
-                  variant={service.status === 'enabled' ? 'default' : 'outline'}
-                  className="text-xs"
-                >
-                  {service.status === 'enabled' ? 'Disable Integration' : 'Enable Integration'}
-                </Button>
-              </Card>
-            ))}
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <div className="text-sm text-gray-500 mb-2">No Outages Occurred</div>
+            <div className="flex items-center justify-center gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span>Down</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span>Critical</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span>Incident</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span>Maintenance</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <span>Suspended</span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Resource Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">CPU Utilization</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Average</span>
+                <span className="font-medium">0.1%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Minimum</span>
+                <span className="font-medium">0.00%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Maximum</span>
+                <span className="font-medium">0.49%</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Memory Utilization</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Average</span>
+                <span className="font-medium">11.72%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Minimum</span>
+                <span className="font-medium">11.67%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Maximum</span>
+                <span className="font-medium">11.78%</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Infrastructure Resources */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -345,7 +453,7 @@ const AdminAlertsHierarchy = () => {
                     </Badge>
                   </div>
 
-                  {/* Monitor Status Summary */}
+                  {/* Enhanced Monitor Status Summary */}
                   <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                     <div className="text-sm font-medium mb-2">Monitor Status</div>
                     <div className="grid grid-cols-4 gap-2 text-center">
