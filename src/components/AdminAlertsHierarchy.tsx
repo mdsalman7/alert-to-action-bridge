@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, ChevronLeft, Users, Monitor, Settings, AlertTriangle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Users, Monitor, Settings, AlertTriangle, Server, Cloud, Database, Activity } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -11,6 +11,29 @@ interface Customer {
   status: 'healthy' | 'warning' | 'critical';
   totalMonitors: number;
   alertsCount: number;
+}
+
+interface InfrastructureResource {
+  id: string;
+  name: string;
+  type: string;
+  provider: string;
+  status: 'up' | 'down' | 'warning' | 'critical';
+  customerId: string;
+  monitorCount: number;
+  upMonitors: number;
+  downMonitors: number;
+  warningMonitors: number;
+  criticalMonitors: number;
+}
+
+interface ServiceIntegration {
+  id: string;
+  name: string;
+  type: string;
+  status: 'enabled' | 'disabled';
+  count: number;
+  icon: string;
 }
 
 interface MonitorDetail {
@@ -34,8 +57,9 @@ interface ThresholdConfig {
 }
 
 const AdminAlertsHierarchy = () => {
-  const [currentView, setCurrentView] = useState<'customers' | 'monitors' | 'thresholds'>('customers');
+  const [currentView, setCurrentView] = useState<'customers' | 'infrastructure' | 'monitors' | 'thresholds'>('customers');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedResource, setSelectedResource] = useState<InfrastructureResource | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorDetail | null>(null);
 
   // Sample data
@@ -60,14 +84,60 @@ const AdminAlertsHierarchy = () => {
       status: 'healthy',
       totalMonitors: 22,
       alertsCount: 0
+    }
+  ];
+
+  const infrastructureResources: InfrastructureResource[] = [
+    {
+      id: 'infra-1',
+      name: 'Production Environment',
+      type: 'AWS Account',
+      provider: 'aws',
+      status: 'critical',
+      customerId: 'cust-1',
+      monitorCount: 8,
+      upMonitors: 5,
+      downMonitors: 1,
+      warningMonitors: 1,
+      criticalMonitors: 1
     },
     {
-      id: 'cust-4',
-      name: 'Digital Dynamics',
+      id: 'infra-2',
+      name: 'Web Servers Cluster',
+      type: 'EC2 Instances',
+      provider: 'aws',
       status: 'warning',
-      totalMonitors: 12,
-      alertsCount: 2
+      customerId: 'cust-1',
+      monitorCount: 4,
+      upMonitors: 3,
+      downMonitors: 0,
+      warningMonitors: 1,
+      criticalMonitors: 0
+    },
+    {
+      id: 'infra-3',
+      name: 'Database Infrastructure',
+      type: 'RDS Cluster',
+      provider: 'aws',
+      status: 'up',
+      customerId: 'cust-1',
+      monitorCount: 3,
+      upMonitors: 3,
+      downMonitors: 0,
+      warningMonitors: 0,
+      criticalMonitors: 0
     }
+  ];
+
+  const serviceIntegrations: ServiceIntegration[] = [
+    { id: '1', name: 'SQS Queue', type: 'messaging', status: 'enabled', count: 11, icon: '📨' },
+    { id: '2', name: 'ECS Cluster Service', type: 'container', status: 'enabled', count: 8, icon: '🐳' },
+    { id: '3', name: 'EBS Volume', type: 'storage', status: 'enabled', count: 1, icon: '💾' },
+    { id: '4', name: 'OpenSearch', type: 'search', status: 'disabled', count: 1, icon: '🔍' },
+    { id: '5', name: 'RDS Instance', type: 'database', status: 'disabled', count: 1, icon: '🗄️' },
+    { id: '6', name: 'ECS Cluster', type: 'container', status: 'disabled', count: 1, icon: '🏗️' },
+    { id: '7', name: 'EC2 Instance', type: 'compute', status: 'disabled', count: 1, icon: '🖥️' },
+    { id: '8', name: 'OpenSearch Nodes', type: 'search', status: 'disabled', count: 0, icon: '🔍' }
   ];
 
   const monitors: MonitorDetail[] = [
@@ -88,15 +158,6 @@ const AdminAlertsHierarchy = () => {
       customerId: 'cust-1',
       alertsCount: 1,
       lastChecked: '1 minute ago'
-    },
-    {
-      id: 'mon-3',
-      name: 'API Gateway',
-      type: 'REST API',
-      status: 'up',
-      customerId: 'cust-1',
-      alertsCount: 0,
-      lastChecked: '30 seconds ago'
     }
   ];
 
@@ -109,24 +170,6 @@ const AdminAlertsHierarchy = () => {
       criticalLevel: 5000,
       unit: 'ms',
       currentValue: 6500
-    },
-    {
-      id: 'thresh-2',
-      monitorId: 'mon-1',
-      parameter: 'CPU Usage',
-      warningLevel: 70,
-      criticalLevel: 90,
-      unit: '%',
-      currentValue: 95
-    },
-    {
-      id: 'thresh-3',
-      monitorId: 'mon-1',
-      parameter: 'Memory Usage',
-      warningLevel: 80,
-      criticalLevel: 95,
-      unit: '%',
-      currentValue: 85
     }
   ];
 
@@ -160,6 +203,15 @@ const AdminAlertsHierarchy = () => {
     }
   };
 
+  const getProviderIcon = (provider: string) => {
+    switch (provider) {
+      case 'aws': return <Cloud className="h-5 w-5 text-orange-500" />;
+      case 'azure': return <Cloud className="h-5 w-5 text-blue-500" />;
+      case 'gcp': return <Cloud className="h-5 w-5 text-green-500" />;
+      default: return <Server className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
   const renderCustomersView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {customers.map((customer) => (
@@ -171,7 +223,7 @@ const AdminAlertsHierarchy = () => {
           }`}
           onClick={() => {
             setSelectedCustomer(customer);
-            setCurrentView('monitors');
+            setCurrentView('infrastructure');
           }}
         >
           <CardContent className="p-4">
@@ -209,8 +261,8 @@ const AdminAlertsHierarchy = () => {
     </div>
   );
 
-  const renderMonitorsView = () => (
-    <div className="space-y-4">
+  const renderInfrastructureView = () => (
+    <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <Button 
           variant="ghost" 
@@ -225,6 +277,126 @@ const AdminAlertsHierarchy = () => {
         </Button>
         <span className="text-sm text-gray-500">•</span>
         <span className="font-medium">{selectedCustomer?.name}</span>
+      </div>
+
+      {/* Customer Overview Card */}
+      <Card className="border-l-4 border-l-blue-500">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            {selectedCustomer?.name} - Service Integrations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {serviceIntegrations.map((service) => (
+              <Card key={service.id} className="text-center p-3">
+                <div className="text-2xl mb-2">{service.icon}</div>
+                <div className="font-medium text-sm mb-1">{service.name}</div>
+                <div className="text-lg font-bold mb-2">{service.count}</div>
+                <Button 
+                  size="sm" 
+                  variant={service.status === 'enabled' ? 'default' : 'outline'}
+                  className="text-xs"
+                >
+                  {service.status === 'enabled' ? 'Disable Integration' : 'Enable Integration'}
+                </Button>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Infrastructure Resources */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {infrastructureResources
+          .filter(resource => resource.customerId === selectedCustomer?.id)
+          .map((resource) => (
+            <Card 
+              key={resource.id}
+              className={`cursor-pointer hover:shadow-lg transition-shadow border-l-4 ${
+                resource.status === 'critical' ? 'border-l-red-500' :
+                resource.status === 'warning' ? 'border-l-yellow-500' : 'border-l-green-500'
+              }`}
+              onClick={() => {
+                setSelectedResource(resource);
+                setCurrentView('monitors');
+              }}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    {getProviderIcon(resource.provider)}
+                    <span className="font-semibold">{resource.name}</span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Type</span>
+                    <span className="text-sm font-medium">{resource.type}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Status</span>
+                    <Badge variant={getStatusBadgeVariant(resource.status)}>
+                      {resource.status.toUpperCase()}
+                    </Badge>
+                  </div>
+
+                  {/* Monitor Status Summary */}
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium mb-2">Monitor Status</div>
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <div>
+                        <div className="text-green-600 font-bold">{resource.upMonitors}</div>
+                        <div className="text-xs text-gray-500">Up</div>
+                      </div>
+                      <div>
+                        <div className="text-red-600 font-bold">{resource.downMonitors}</div>
+                        <div className="text-xs text-gray-500">Down</div>
+                      </div>
+                      <div>
+                        <div className="text-yellow-600 font-bold">{resource.warningMonitors}</div>
+                        <div className="text-xs text-gray-500">Warning</div>
+                      </div>
+                      <div>
+                        <div className="text-red-800 font-bold">{resource.criticalMonitors}</div>
+                        <div className="text-xs text-gray-500">Critical</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-gray-500">
+                    Total Monitors: {resource.monitorCount}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
+    </div>
+  );
+
+  const renderMonitorsView = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => {
+            setCurrentView('infrastructure');
+            setSelectedResource(null);
+          }}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Infrastructure
+        </Button>
+        <span className="text-sm text-gray-500">•</span>
+        <span className="font-medium">{selectedCustomer?.name}</span>
+        <span className="text-sm text-gray-500">•</span>
+        <span className="font-medium">{selectedResource?.name}</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -382,12 +554,14 @@ const AdminAlertsHierarchy = () => {
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
             {currentView === 'customers' && 'Customer Alert Dashboard'}
-            {currentView === 'monitors' && `Monitors - ${selectedCustomer?.name}`}
+            {currentView === 'infrastructure' && `Infrastructure - ${selectedCustomer?.name}`}
+            {currentView === 'monitors' && `Monitors - ${selectedResource?.name}`}
             {currentView === 'thresholds' && `Thresholds - ${selectedMonitor?.name}`}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {currentView === 'customers' && renderCustomersView()}
+          {currentView === 'infrastructure' && renderInfrastructureView()}
           {currentView === 'monitors' && renderMonitorsView()}
           {currentView === 'thresholds' && renderThresholdsView()}
         </CardContent>
