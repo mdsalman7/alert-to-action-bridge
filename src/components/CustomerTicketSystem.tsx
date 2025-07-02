@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Ticket, Customer, RequestedItem, TimeEntry } from '@/types/tickets';
 import { User } from '@/types/auth';
+import CreateTicketForm from './CreateTicketForm';
 import { 
   ArrowLeft, 
   Building2, 
@@ -38,6 +38,7 @@ const CustomerTicketSystem: React.FC<CustomerTicketSystemProps> = ({ user, ticke
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showCreateTicket, setShowCreateTicket] = useState(false);
 
   useEffect(() => {
     // Group tickets by customer and create customer summary
@@ -120,6 +121,18 @@ const CustomerTicketSystem: React.FC<CustomerTicketSystemProps> = ({ user, ticke
           }
         : ticket
     ));
+  };
+
+  const handleCreateTicket = (ticketData: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newTicket: Ticket = {
+      ...ticketData,
+      id: `ticket-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setTickets(prev => [newTicket, ...prev]);
+    setShowCreateTicket(false);
   };
 
   if (selectedTicket) {
@@ -380,99 +393,114 @@ const CustomerTicketSystem: React.FC<CustomerTicketSystemProps> = ({ user, ticke
   if (selectedCustomer) {
     return (
       <div className="space-y-6">
-        {/* Customer Tickets Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => setSelectedCustomer(null)}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Customers
-            </Button>
-            <div>
-              <h2 className="text-2xl font-bold">{selectedCustomer.name}</h2>
-              <p className="text-gray-600">{selectedCustomer.ticketCount} total tickets</p>
+        {showCreateTicket ? (
+          <CreateTicketForm
+            customer={selectedCustomer}
+            user={user}
+            onSubmit={handleCreateTicket}
+            onCancel={() => setShowCreateTicket(false)}
+          />
+        ) : (
+          <>
+            {/* Customer Tickets Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setSelectedCustomer(null)}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Customers
+                </Button>
+                <div>
+                  <h2 className="text-2xl font-bold">{selectedCustomer.name}</h2>
+                  <p className="text-gray-600">{selectedCustomer.ticketCount} total tickets</p>
+                </div>
+              </div>
+              <Button onClick={() => setShowCreateTicket(true)} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Create Ticket
+              </Button>
             </div>
-          </div>
-        </div>
 
-        {/* Filters */}
-        <div className="flex gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search tickets..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="in-progress">In Progress</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            {/* Filters */}
+            <div className="flex gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search tickets..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Tickets Table */}
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Requester</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Assigned to</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomerTickets.map((ticket) => (
-                  <TableRow 
-                    key={ticket.id} 
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => setSelectedTicket(ticket)}
-                  >
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{ticket.title}</div>
-                        <div className="text-sm text-gray-500">{ticket.id}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{ticket.requester}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStateColor(ticket.state)} className="capitalize">
-                        {ticket.state}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(ticket.status)} className="capitalize">
-                        {ticket.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getPriorityColor(ticket.priority)} className="capitalize">
-                        {ticket.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{ticket.assignedTo || 'None'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+            {/* Tickets Table */}
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Requester</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Assigned to</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCustomerTickets.map((ticket) => (
+                      <TableRow 
+                        key={ticket.id} 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => setSelectedTicket(ticket)}
+                      >
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{ticket.title}</div>
+                            <div className="text-sm text-gray-500">{ticket.id}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{ticket.requester}</TableCell>
+                        <TableCell>
+                          <Badge variant={getStateColor(ticket.state)} className="capitalize">
+                            {ticket.state}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusColor(ticket.status)} className="capitalize">
+                            {ticket.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getPriorityColor(ticket.priority)} className="capitalize">
+                            {ticket.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{ticket.assignedTo || 'None'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
     );
   }
