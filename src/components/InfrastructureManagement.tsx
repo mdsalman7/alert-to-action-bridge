@@ -50,17 +50,12 @@ const InfrastructureManagement: React.FC<InfrastructureManagementProps> = ({ use
   return (
     <div className="space-y-6">
       <Tabs defaultValue="customers" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="customers">Customer Management</TabsTrigger>
-          <TabsTrigger value="groups">Groups</TabsTrigger>
         </TabsList>
 
         <TabsContent value="customers">
           <CustomerManagement />
-        </TabsContent>
-
-        <TabsContent value="groups">
-          <MonitorGroupManager />
         </TabsContent>
       </Tabs>
     </div>
