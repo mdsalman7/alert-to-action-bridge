@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Plus, Building, Settings, Activity, ChevronRight } from 'lucide-react';
+import { Users, Plus, Building, Settings, Activity, ChevronRight, Cloud, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -19,6 +18,7 @@ interface Customer {
   totalResources: number;
   totalMonitors: number;
   serviceIntegrations: ServiceIntegration[];
+  cloudIntegrations: CloudIntegration[];
   createdAt: string;
 }
 
@@ -29,6 +29,23 @@ interface ServiceIntegration {
   status: 'enabled' | 'disabled';
   count: number;
   icon: string;
+}
+
+interface CloudIntegration {
+  id: string;
+  provider: 'aws' | 'azure' | 'gcp';
+  name: string;
+  status: 'connected' | 'disconnected' | 'pending';
+  connectedAt?: string;
+  services: CloudService[];
+}
+
+interface CloudService {
+  id: string;
+  name: string;
+  type: string;
+  status: 'active' | 'inactive';
+  count: number;
 }
 
 const CustomerManagement = () => {
@@ -52,6 +69,20 @@ const CustomerManagement = () => {
         { id: '7', name: 'EC2 Instance', type: 'compute', status: 'disabled', count: 1, icon: '🖥️' },
         { id: '8', name: 'OpenSearch Nodes', type: 'search', status: 'disabled', count: 0, icon: '🔍' }
       ],
+      cloudIntegrations: [
+        {
+          id: 'aws-1',
+          provider: 'aws',
+          name: 'AWS Production Account',
+          status: 'connected',
+          connectedAt: new Date().toISOString(),
+          services: [
+            { id: '1', name: 'EC2 Instances', type: 'compute', status: 'active', count: 12 },
+            { id: '2', name: 'RDS Databases', type: 'database', status: 'active', count: 3 },
+            { id: '3', name: 'S3 Buckets', type: 'storage', status: 'active', count: 8 }
+          ]
+        }
+      ],
       createdAt: new Date().toISOString()
     },
     {
@@ -73,6 +104,7 @@ const CustomerManagement = () => {
         { id: '7', name: 'EC2 Instance', type: 'compute', status: 'enabled', count: 2, icon: '🖥️' },
         { id: '8', name: 'OpenSearch Nodes', type: 'search', status: 'disabled', count: 0, icon: '🔍' }
       ],
+      cloudIntegrations: [],
       createdAt: new Date().toISOString()
     }
   ]);
@@ -108,6 +140,7 @@ const CustomerManagement = () => {
         { id: '7', name: 'EC2 Instance', type: 'compute', status: 'disabled', count: 0, icon: '🖥️' },
         { id: '8', name: 'OpenSearch Nodes', type: 'search', status: 'disabled', count: 0, icon: '🔍' }
       ],
+      cloudIntegrations: [],
       createdAt: new Date().toISOString()
     };
 
@@ -134,6 +167,45 @@ const CustomerManagement = () => {
       }
       return customer;
     }));
+  };
+
+  const handleConnectCloudProvider = (customerId: string, provider: 'aws' | 'azure' | 'gcp') => {
+    setCustomers(prev => prev.map(customer => {
+      if (customer.id === customerId) {
+        const newIntegration: CloudIntegration = {
+          id: `${provider}-${Date.now()}`,
+          provider,
+          name: `${provider.toUpperCase()} Account`,
+          status: 'connected',
+          connectedAt: new Date().toISOString(),
+          services: []
+        };
+        
+        return {
+          ...customer,
+          cloudIntegrations: [...customer.cloudIntegrations, newIntegration]
+        };
+      }
+      return customer;
+    }));
+  };
+
+  const getProviderIcon = (provider: string) => {
+    switch (provider) {
+      case 'aws': return '🟠';
+      case 'azure': return '🔵';
+      case 'gcp': return '🟢';
+      default: return '☁️';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'connected': return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'pending': return <AlertCircle className="h-5 w-5 text-yellow-500" />;
+      case 'disconnected': return <XCircle className="h-5 w-5 text-red-500" />;
+      default: return <XCircle className="h-5 w-5 text-gray-500" />;
+    }
   };
 
   if (selectedCustomer) {
@@ -246,21 +318,183 @@ const CustomerManagement = () => {
           </TabsContent>
 
           <TabsContent value="resources">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Customer Resources
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-gray-500">
-                  <Activity className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No resources configured yet.</p>
-                  <p className="text-sm">Resources will appear here once configured for this customer.</p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {/* Cloud Provider Integrations */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Cloud className="h-5 w-5" />
+                    Cloud Provider Integrations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* AWS Integration */}
+                    <Card className="border-2">
+                      <CardContent className="p-6">
+                        <div className="text-center space-y-4">
+                          <div className="text-4xl">🟠</div>
+                          <h3 className="font-semibold text-lg">Amazon Web Services</h3>
+                          {selectedCustomer.cloudIntegrations.find(ci => ci.provider === 'aws') ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                <span className="text-green-600 font-medium">Successfully Integrated</span>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                Connected on {new Date(selectedCustomer.cloudIntegrations.find(ci => ci.provider === 'aws')?.connectedAt || '').toLocaleDateString()}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <Button 
+                                onClick={() => handleConnectCloudProvider(selectedCustomer.id, 'aws')}
+                                className="w-full"
+                              >
+                                Connect AWS Account
+                              </Button>
+                              <div className="text-left space-y-2">
+                                <h4 className="font-medium text-sm">Integration Steps:</h4>
+                                <ol className="text-xs text-gray-600 space-y-1">
+                                  <li>1. Create AWS IAM role with monitoring permissions</li>
+                                  <li>2. Add cross-account trust policy</li>
+                                  <li>3. Configure CloudWatch access</li>
+                                  <li>4. Test connection and validate permissions</li>
+                                </ol>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Azure Integration */}
+                    <Card className="border-2">
+                      <CardContent className="p-6">
+                        <div className="text-center space-y-4">
+                          <div className="text-4xl">🔵</div>
+                          <h3 className="font-semibold text-lg">Microsoft Azure</h3>
+                          {selectedCustomer.cloudIntegrations.find(ci => ci.provider === 'azure') ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                <span className="text-green-600 font-medium">Successfully Integrated</span>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                Connected on {new Date(selectedCustomer.cloudIntegrations.find(ci => ci.provider === 'azure')?.connectedAt || '').toLocaleDateString()}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <Button 
+                                onClick={() => handleConnectCloudProvider(selectedCustomer.id, 'azure')}
+                                className="w-full"
+                                variant="outline"
+                              >
+                                Connect Azure Account
+                              </Button>
+                              <div className="text-left space-y-2">
+                                <h4 className="font-medium text-sm">Integration Steps:</h4>
+                                <ol className="text-xs text-gray-600 space-y-1">
+                                  <li>1. Register application in Azure AD</li>
+                                  <li>2. Configure API permissions for monitoring</li>
+                                  <li>3. Create service principal credentials</li>
+                                  <li>4. Test Azure Monitor access</li>
+                                </ol>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* GCP Integration */}
+                    <Card className="border-2">
+                      <CardContent className="p-6">
+                        <div className="text-center space-y-4">
+                          <div className="text-4xl">🟢</div>
+                          <h3 className="font-semibold text-lg">Google Cloud Platform</h3>
+                          {selectedCustomer.cloudIntegrations.find(ci => ci.provider === 'gcp') ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                <span className="text-green-600 font-medium">Successfully Integrated</span>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                Connected on {new Date(selectedCustomer.cloudIntegrations.find(ci => ci.provider === 'gcp')?.connectedAt || '').toLocaleDateString()}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <Button 
+                                onClick={() => handleConnectCloudProvider(selectedCustomer.id, 'gcp')}
+                                className="w-full"
+                                variant="outline"
+                              >
+                                Connect GCP Account
+                              </Button>
+                              <div className="text-left space-y-2">
+                                <h4 className="font-medium text-sm">Integration Steps:</h4>
+                                <ol className="text-xs text-gray-600 space-y-1">
+                                  <li>1. Create service account in GCP</li>
+                                  <li>2. Enable Cloud Monitoring API</li>
+                                  <li>3. Download service account key</li>
+                                  <li>4. Test monitoring permissions</li>
+                                </ol>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Connected Services */}
+              {selectedCustomer.cloudIntegrations.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Connected Cloud Services
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {selectedCustomer.cloudIntegrations.map((integration) => (
+                        <div key={integration.id} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{getProviderIcon(integration.provider)}</span>
+                              <div>
+                                <h3 className="font-semibold">{integration.name}</h3>
+                                <p className="text-sm text-gray-600">{integration.provider.toUpperCase()}</p>
+                              </div>
+                            </div>
+                            {getStatusIcon(integration.status)}
+                          </div>
+                          
+                          {integration.services.length > 0 && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                              {integration.services.map((service) => (
+                                <div key={service.id} className="text-center p-3 bg-gray-50 rounded">
+                                  <div className="font-medium text-sm">{service.name}</div>
+                                  <div className="text-lg font-bold text-blue-600">{service.count}</div>
+                                  <Badge variant={service.status === 'active' ? 'default' : 'secondary'}>
+                                    {service.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -373,6 +607,9 @@ const CustomerManagement = () => {
                         <span className="text-green-600 font-medium">{customer.totalMonitors} Monitors</span>
                         <span className="text-purple-600 font-medium">
                           {customer.serviceIntegrations.filter(s => s.status === 'enabled').length} Integrations
+                        </span>
+                        <span className="text-orange-600 font-medium">
+                          {customer.cloudIntegrations.filter(ci => ci.status === 'connected').length} Cloud Providers
                         </span>
                       </div>
                     </div>
