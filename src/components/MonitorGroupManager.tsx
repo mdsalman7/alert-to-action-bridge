@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Folder, Plus, Settings, Tag } from 'lucide-react';
+import { Folder, Plus, Settings, Tag, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface MonitorGroup {
   id: string;
@@ -24,6 +25,7 @@ interface MonitorGroupManagerProps {
 }
 
 const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, onGroupSelect }) => {
+  const { toast } = useToast();
   const [groups, setGroups] = useState<MonitorGroup[]>([
     {
       id: 'group-1',
@@ -66,12 +68,19 @@ const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, o
   ];
 
   const handleCreateGroup = () => {
-    if (!newGroup.name) return;
+    if (!newGroup.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Group name is required",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const group: MonitorGroup = {
       id: `group-${Date.now()}`,
-      name: newGroup.name,
-      description: newGroup.description,
+      name: newGroup.name.trim(),
+      description: newGroup.description.trim(),
       color: newGroup.color,
       customerId: customerId || 'default',
       customerName: 'Current Customer',
@@ -82,13 +91,31 @@ const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, o
     setGroups(prev => [...prev, group]);
     setNewGroup({ name: '', description: '', color: 'bg-blue-100 text-blue-800', tags: [], newTag: '' });
     setShowCreateGroup(false);
+    
+    toast({
+      title: "Success",
+      description: `Monitor group "${group.name}" created successfully`
+    });
+  };
+
+  const handleDeleteGroup = (groupId: string) => {
+    const groupToDelete = groups.find(g => g.id === groupId);
+    if (!groupToDelete) return;
+
+    setGroups(prev => prev.filter(group => group.id !== groupId));
+    
+    toast({
+      title: "Success",
+      description: `Monitor group "${groupToDelete.name}" deleted successfully`
+    });
   };
 
   const addTag = () => {
-    if (newGroup.newTag && !newGroup.tags.includes(newGroup.newTag)) {
+    const trimmedTag = newGroup.newTag.trim();
+    if (trimmedTag && !newGroup.tags.includes(trimmedTag)) {
       setNewGroup(prev => ({
         ...prev,
-        tags: [...prev.tags, prev.newTag],
+        tags: [...prev.tags, trimmedTag],
         newTag: ''
       }));
     }
@@ -99,6 +126,11 @@ const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, o
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
+  };
+
+  const handleCancelCreate = () => {
+    setNewGroup({ name: '', description: '', color: 'bg-blue-100 text-blue-800', tags: [], newTag: '' });
+    setShowCreateGroup(false);
   };
 
   const filteredGroups = customerId 
@@ -126,7 +158,7 @@ const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, o
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Group Name</label>
+                  <label className="text-sm font-medium mb-2 block">Group Name *</label>
                   <Input
                     placeholder="e.g., Production Websites"
                     value={newGroup.name}
@@ -171,7 +203,7 @@ const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, o
                     onChange={(e) => setNewGroup(prev => ({ ...prev, newTag: e.target.value }))}
                     onKeyPress={(e) => e.key === 'Enter' && addTag()}
                   />
-                  <Button onClick={addTag} size="sm">Add</Button>
+                  <Button onClick={addTag} size="sm" disabled={!newGroup.newTag.trim()}>Add</Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {newGroup.tags.map((tag) => (
@@ -184,7 +216,7 @@ const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, o
               
               <div className="flex gap-2">
                 <Button onClick={handleCreateGroup}>Create Group</Button>
-                <Button variant="outline" onClick={() => setShowCreateGroup(false)}>Cancel</Button>
+                <Button variant="outline" onClick={handleCancelCreate}>Cancel</Button>
               </div>
             </div>
           </CardContent>
@@ -208,9 +240,11 @@ const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, o
                   <p className="text-sm text-gray-600 mb-2">{group.description}</p>
                   <p className="text-xs text-gray-500">{group.customerName}</p>
                 </div>
-                <Badge className={group.color}>
-                  {group.monitorCount}
-                </Badge>
+                <div className="flex items-center gap-1">
+                  <Badge className={group.color}>
+                    {group.monitorCount}
+                  </Badge>
+                </div>
               </div>
               
               <div className="flex flex-wrap gap-1 mb-3">
@@ -224,14 +258,48 @@ const MonitorGroupManager: React.FC<MonitorGroupManagerProps> = ({ customerId, o
               
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-sm text-gray-600">Monitors: {group.monitorCount}</span>
-                <Button size="sm" variant="ghost">
-                  <Settings className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Settings clicked for group:', group.id);
+                    }}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteGroup(group.id);
+                    }}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {filteredGroups.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Folder className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Monitor Groups Yet</h3>
+            <p className="text-gray-600 mb-4">Create your first monitor group to organize your monitoring</p>
+            <Button onClick={() => setShowCreateGroup(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Group
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

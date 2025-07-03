@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Users, Plus, Settings, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Group {
   id: string;
@@ -16,6 +17,7 @@ interface Group {
 }
 
 const GroupManagement: React.FC = () => {
+  const { toast } = useToast();
   const [groups, setGroups] = useState<Group[]>([
     {
       id: 'group-1',
@@ -47,12 +49,19 @@ const GroupManagement: React.FC = () => {
   });
 
   const handleCreateGroup = () => {
-    if (!newGroup.name.trim()) return;
+    if (!newGroup.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Group name is required",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const group: Group = {
       id: `group-${Date.now()}`,
-      name: newGroup.name,
-      description: newGroup.description,
+      name: newGroup.name.trim(),
+      description: newGroup.description.trim(),
       members: [],
       createdAt: new Date().toISOString()
     };
@@ -60,10 +69,28 @@ const GroupManagement: React.FC = () => {
     setGroups(prev => [...prev, group]);
     setNewGroup({ name: '', description: '' });
     setShowCreateGroup(false);
+    
+    toast({
+      title: "Success",
+      description: `Group "${group.name}" created successfully`
+    });
   };
 
   const handleDeleteGroup = (groupId: string) => {
+    const groupToDelete = groups.find(g => g.id === groupId);
+    if (!groupToDelete) return;
+
     setGroups(prev => prev.filter(group => group.id !== groupId));
+    
+    toast({
+      title: "Success",
+      description: `Group "${groupToDelete.name}" deleted successfully`
+    });
+  };
+
+  const handleCancelCreate = () => {
+    setNewGroup({ name: '', description: '' });
+    setShowCreateGroup(false);
   };
 
   return (
@@ -86,7 +113,7 @@ const GroupManagement: React.FC = () => {
           <CardContent>
             <div className="space-y-4 border-t pt-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Group Name</label>
+                <label className="text-sm font-medium mb-2 block">Group Name *</label>
                 <Input
                   placeholder="e.g., DevOps Team"
                   value={newGroup.name}
@@ -103,7 +130,7 @@ const GroupManagement: React.FC = () => {
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleCreateGroup}>Create Group</Button>
-                <Button variant="outline" onClick={() => setShowCreateGroup(false)}>Cancel</Button>
+                <Button variant="outline" onClick={handleCancelCreate}>Cancel</Button>
               </div>
             </div>
           </CardContent>
@@ -120,14 +147,15 @@ const GroupManagement: React.FC = () => {
                   <p className="text-sm text-gray-600 mb-3">{group.description}</p>
                 </div>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="ghost">
+                  <Button size="sm" variant="ghost" title="Settings">
                     <Settings className="h-4 w-4" />
                   </Button>
                   <Button 
                     size="sm" 
                     variant="ghost" 
                     onClick={() => handleDeleteGroup(group.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Delete group"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -147,6 +175,9 @@ const GroupManagement: React.FC = () => {
                   {group.members.length > 3 && (
                     <div className="text-sm text-gray-500">+{group.members.length - 3} more</div>
                   )}
+                  {group.members.length === 0 && (
+                    <div className="text-sm text-gray-400 italic">No members yet</div>
+                  )}
                 </div>
                 
                 <Button size="sm" variant="outline" className="w-full mt-2">
@@ -157,6 +188,20 @@ const GroupManagement: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      {groups.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Groups Yet</h3>
+            <p className="text-gray-600 mb-4">Create your first team group to organize your members</p>
+            <Button onClick={() => setShowCreateGroup(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Group
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
