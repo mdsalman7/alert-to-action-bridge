@@ -10,6 +10,7 @@ interface Customer {
   status: 'healthy' | 'warning' | 'critical';
   totalMonitors: number;
   alertsCount: number;
+  totalResources: number;
 }
 
 interface InfrastructureResource {
@@ -24,15 +25,10 @@ interface InfrastructureResource {
   downMonitors: number;
   warningMonitors: number;
   criticalMonitors: number;
-}
-
-interface ServiceIntegration {
-  id: string;
-  name: string;
-  type: string;
-  status: 'enabled' | 'disabled';
-  count: number;
-  icon: string;
+  availability: string;
+  downtime: string;
+  cpuUtilization: string;
+  memoryUtilization: string;
 }
 
 interface MonitorDetail {
@@ -56,37 +52,39 @@ interface ThresholdConfig {
 }
 
 const AdminAlertsHierarchy = () => {
-  const [currentView, setCurrentView] = useState<'customers' | 'infrastructure' | 'monitors' | 'thresholds'>('customers');
+  const [currentView, setCurrentView] = useState<'customers' | 'infrastructure' | 'resource-details' | 'monitors' | 'thresholds'>('customers');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedResource, setSelectedResource] = useState<InfrastructureResource | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorDetail | null>(null);
 
-  // Enhanced sample data with more detailed monitoring information
+  // Enhanced sample data
   const customers: Customer[] = [
     {
       id: 'cust-1',
       name: 'Acme Corporation',
       status: 'critical',
       totalMonitors: 15,
-      alertsCount: 3
+      alertsCount: 3,
+      totalResources: 5
     },
     {
       id: 'cust-2', 
       name: 'TechStart Solutions',
       status: 'warning',
       totalMonitors: 8,
-      alertsCount: 1
+      alertsCount: 1,
+      totalResources: 3
     },
     {
       id: 'cust-3',
       name: 'Global Industries',
       status: 'healthy',
       totalMonitors: 22,
-      alertsCount: 0
+      alertsCount: 0,
+      totalResources: 8
     }
   ];
 
-  // Enhanced infrastructure resources with detailed monitoring metrics
   const infrastructureResources: InfrastructureResource[] = [
     {
       id: 'infra-1',
@@ -99,7 +97,11 @@ const AdminAlertsHierarchy = () => {
       upMonitors: 5,
       downMonitors: 1,
       warningMonitors: 1,
-      criticalMonitors: 1
+      criticalMonitors: 1,
+      availability: '99.9%',
+      downtime: '2 hours',
+      cpuUtilization: '0.1%',
+      memoryUtilization: '11.72%'
     },
     {
       id: 'infra-2',
@@ -112,7 +114,11 @@ const AdminAlertsHierarchy = () => {
       upMonitors: 3,
       downMonitors: 0,
       warningMonitors: 1,
-      criticalMonitors: 0
+      criticalMonitors: 0,
+      availability: '99.5%',
+      downtime: '0 hours',
+      cpuUtilization: '45.2%',
+      memoryUtilization: '67.8%'
     },
     {
       id: 'infra-3',
@@ -125,7 +131,11 @@ const AdminAlertsHierarchy = () => {
       upMonitors: 3,
       downMonitors: 0,
       warningMonitors: 0,
-      criticalMonitors: 0
+      criticalMonitors: 0,
+      availability: '100%',
+      downtime: '0 hours',
+      cpuUtilization: '12.5%',
+      memoryUtilization: '34.1%'
     },
     {
       id: 'infra-4',
@@ -138,7 +148,11 @@ const AdminAlertsHierarchy = () => {
       upMonitors: 2,
       downMonitors: 0,
       warningMonitors: 0,
-      criticalMonitors: 0
+      criticalMonitors: 0,
+      availability: '99.99%',
+      downtime: '0 hours',
+      cpuUtilization: '5.3%',
+      memoryUtilization: '18.9%'
     },
     {
       id: 'infra-5',
@@ -151,20 +165,12 @@ const AdminAlertsHierarchy = () => {
       upMonitors: 0,
       downMonitors: 0,
       warningMonitors: 1,
-      criticalMonitors: 0
+      criticalMonitors: 0,
+      availability: '98.7%',
+      downtime: '1 hour',
+      cpuUtilization: '8.1%',
+      memoryUtilization: '22.4%'
     }
-  ];
-
-  // Enhanced service integrations with more detailed metrics
-  const serviceIntegrations: ServiceIntegration[] = [
-    { id: '1', name: 'SQS Queue', type: 'messaging', status: 'enabled', count: 11, icon: '📨' },
-    { id: '2', name: 'ECS Cluster Service', type: 'container', status: 'enabled', count: 8, icon: '🐳' },
-    { id: '3', name: 'EBS Volume', type: 'storage', status: 'enabled', count: 1, icon: '💾' },
-    { id: '4', name: 'OpenSearch', type: 'search', status: 'disabled', count: 1, icon: '🔍' },
-    { id: '5', name: 'RDS Instance', type: 'database', status: 'disabled', count: 1, icon: '🗄️' },
-    { id: '6', name: 'ECS Cluster', type: 'container', status: 'disabled', count: 1, icon: '🏗️' },
-    { id: '7', name: 'EC2 Instance', type: 'compute', status: 'disabled', count: 1, icon: '🖥️' },
-    { id: '8', name: 'OpenSearch Nodes', type: 'search', status: 'disabled', count: 0, icon: '🔍' }
   ];
 
   const monitors: MonitorDetail[] = [
@@ -271,6 +277,11 @@ const AdminAlertsHierarchy = () => {
               </div>
               
               <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Resources</span>
+                <span className="font-medium">{customer.totalResources}</span>
+              </div>
+              
+              <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Monitors</span>
                 <span className="font-medium">{customer.totalMonitors}</span>
               </div>
@@ -306,115 +317,6 @@ const AdminAlertsHierarchy = () => {
         <span className="font-medium">{selectedCustomer?.name}</span>
       </div>
 
-      {/* Customer Overview with Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-700">100%</div>
-            <div className="text-sm text-blue-600">Availability</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-700">0</div>
-            <div className="text-sm text-green-600">Downtime</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-700">0.1%</div>
-            <div className="text-sm text-yellow-600">CPU Utilization</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-700">11.72%</div>
-            <div className="text-sm text-purple-600">Memory Utilization</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Events Timeline */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Events Timeline</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-gray-50 p-4 rounded-lg text-center">
-            <div className="text-sm text-gray-500 mb-2">No Outages Occurred</div>
-            <div className="flex items-center justify-center gap-4 text-xs">
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>Down</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span>Critical</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span>Incident</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span>Maintenance</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                <span>Suspended</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Resource Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">CPU Utilization</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Average</span>
-                <span className="font-medium">0.1%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Minimum</span>
-                <span className="font-medium">0.00%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Maximum</span>
-                <span className="font-medium">0.49%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Memory Utilization</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Average</span>
-                <span className="font-medium">11.72%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Minimum</span>
-                <span className="font-medium">11.67%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Maximum</span>
-                <span className="font-medium">11.78%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Infrastructure Resources */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {infrastructureResources
@@ -428,7 +330,7 @@ const AdminAlertsHierarchy = () => {
               }`}
               onClick={() => {
                 setSelectedResource(resource);
-                setCurrentView('monitors');
+                setCurrentView('resource-details');
               }}
             >
               <CardContent className="p-4">
@@ -453,7 +355,7 @@ const AdminAlertsHierarchy = () => {
                     </Badge>
                   </div>
 
-                  {/* Enhanced Monitor Status Summary */}
+                  {/* Monitor Status Summary */}
                   <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                     <div className="text-sm font-medium mb-2">Monitor Status</div>
                     <div className="grid grid-cols-4 gap-2 text-center">
@@ -487,8 +389,8 @@ const AdminAlertsHierarchy = () => {
     </div>
   );
 
-  const renderMonitorsView = () => (
-    <div className="space-y-4">
+  const renderResourceDetailsView = () => (
+    <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <Button 
           variant="ghost" 
@@ -500,6 +402,154 @@ const AdminAlertsHierarchy = () => {
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
           Back to Infrastructure
+        </Button>
+        <span className="text-sm text-gray-500">•</span>
+        <span className="font-medium">{selectedCustomer?.name}</span>
+        <span className="text-sm text-gray-500">•</span>
+        <span className="font-medium">{selectedResource?.name}</span>
+      </div>
+
+      {/* Metrics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-blue-700">{selectedResource?.availability}</div>
+            <div className="text-sm text-blue-600">Availability</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-700">{selectedResource?.downtime}</div>
+            <div className="text-sm text-green-600">Downtime</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-700">{selectedResource?.cpuUtilization}</div>
+            <div className="text-sm text-yellow-600">CPU Utilization</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-purple-700">{selectedResource?.memoryUtilization}</div>
+            <div className="text-sm text-purple-600">Memory Utilization</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Events Timeline */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Events Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <div className="text-sm text-gray-500 mb-2">Recent Events</div>
+            <div className="flex items-center justify-center gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span>Up</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span>Critical</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span>Incident</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span>Maintenance</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <span>Suspended</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Detailed Resource Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">CPU Utilization Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Average</span>
+                <span className="font-medium">{selectedResource?.cpuUtilization}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Minimum</span>
+                <span className="font-medium">0.00%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Maximum</span>
+                <span className="font-medium">85.49%</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Memory Utilization Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Average</span>
+                <span className="font-medium">{selectedResource?.memoryUtilization}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Minimum</span>
+                <span className="font-medium">10.67%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Maximum</span>
+                <span className="font-medium">78.45%</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Monitor Actions */}
+      <div className="flex gap-4">
+        <Button 
+          onClick={() => {
+            setCurrentView('monitors');
+          }}
+          className="flex items-center gap-2"
+        >
+          <Monitor className="h-4 w-4" />
+          View Monitors
+        </Button>
+        <Button variant="outline">
+          <Settings className="h-4 w-4 mr-2" />
+          Configure Alerts
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderMonitorsView = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => {
+            setCurrentView('resource-details');
+            setSelectedMonitor(null);
+          }}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Resource Details
         </Button>
         <span className="text-sm text-gray-500">•</span>
         <span className="font-medium">{selectedCustomer?.name}</span>
@@ -663,6 +713,7 @@ const AdminAlertsHierarchy = () => {
             <AlertTriangle className="h-5 w-5" />
             {currentView === 'customers' && 'Customer Alert Dashboard'}
             {currentView === 'infrastructure' && `Infrastructure - ${selectedCustomer?.name}`}
+            {currentView === 'resource-details' && `Resource Details - ${selectedResource?.name}`}
             {currentView === 'monitors' && `Monitors - ${selectedResource?.name}`}
             {currentView === 'thresholds' && `Thresholds - ${selectedMonitor?.name}`}
           </CardTitle>
@@ -670,6 +721,7 @@ const AdminAlertsHierarchy = () => {
         <CardContent>
           {currentView === 'customers' && renderCustomersView()}
           {currentView === 'infrastructure' && renderInfrastructureView()}
+          {currentView === 'resource-details' && renderResourceDetailsView()}
           {currentView === 'monitors' && renderMonitorsView()}
           {currentView === 'thresholds' && renderThresholdsView()}
         </CardContent>
