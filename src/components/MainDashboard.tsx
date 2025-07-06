@@ -359,18 +359,7 @@ const MainDashboard = () => {
 
           {user.role === 'administrator' && (
             <TabsContent value="users">
-              <Tabs defaultValue="users" className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="users">Users</TabsTrigger>
-                  <TabsTrigger value="groups">Groups</TabsTrigger>
-                </TabsList>
-                <TabsContent value="users">
-                  <UserManagement currentUser={user} />
-                </TabsContent>
-                <TabsContent value="groups">
-                  <GroupManagement />
-                </TabsContent>
-              </Tabs>
+              <UserManagement currentUser={user} />
             </TabsContent>
           )}
 

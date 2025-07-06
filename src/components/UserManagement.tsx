@@ -10,7 +10,11 @@ import { User } from '@/types/auth';
 import { Users, Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const UserManagement: React.FC = () => {
+interface UserManagementProps {
+  currentUser?: User;
+}
+
+const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([
     {
@@ -19,6 +23,8 @@ const UserManagement: React.FC = () => {
       email: 'john.doe@company.com',
       role: 'administrator',
       assignedResources: ['resource-1', 'resource-2'],
+      assignedProjects: ['project-1'],
+      isActive: true,
       createdAt: new Date().toISOString()
     },
     {
@@ -27,6 +33,8 @@ const UserManagement: React.FC = () => {
       email: 'jane.smith@company.com',
       role: 'super-user',
       assignedResources: ['resource-1'],
+      assignedProjects: ['project-2'],
+      isActive: true,
       createdAt: new Date().toISOString()
     },
     {
@@ -35,6 +43,8 @@ const UserManagement: React.FC = () => {
       email: 'mike.johnson@company.com',
       role: 'read-only',
       assignedResources: ['resource-3'],
+      assignedProjects: [],
+      isActive: true,
       createdAt: new Date().toISOString()
     }
   ]);
@@ -42,11 +52,16 @@ const UserManagement: React.FC = () => {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<{
+    name: string;
+    email: string;
+    role: 'administrator' | 'super-user' | 'read-only';
+    assignedResources: string[];
+  }>({
     name: '',
     email: '',
-    role: 'read-only' as const,
-    assignedResources: [] as string[]
+    role: 'read-only',
+    assignedResources: []
   });
 
   const filteredUsers = users.filter(user =>
@@ -79,6 +94,8 @@ const UserManagement: React.FC = () => {
       email: newUser.email.trim(),
       role: newUser.role,
       assignedResources: newUser.assignedResources,
+      assignedProjects: [],
+      isActive: true,
       createdAt: new Date().toISOString()
     };
 
