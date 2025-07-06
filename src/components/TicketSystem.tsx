@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Ticket } from '@/types/tickets';
 import { User } from '@/types/auth';
 import { TicketPlus, MessageSquare, CheckCircle } from 'lucide-react';
+import ITSMDashboard from './ITSMDashboard';
 
 interface TicketSystemProps {
   user: User;
@@ -16,6 +18,7 @@ interface TicketSystemProps {
 }
 
 const TicketSystem: React.FC<TicketSystemProps> = ({ user, tickets, setTickets }) => {
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [showCreateTicket, setShowCreateTicket] = useState(false);
   const [newTicket, setNewTicket] = useState({
     title: '',
@@ -102,180 +105,275 @@ const TicketSystem: React.FC<TicketSystemProps> = ({ user, tickets, setTickets }
 
   return (
     <div className="space-y-6">
-      {/* Create Ticket */}
-      {user.role !== 'read-only' && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <TicketPlus className="h-5 w-5" />
-                Ticket Management
-              </CardTitle>
-              <Button onClick={() => setShowCreateTicket(!showCreateTicket)}>
-                <TicketPlus className="h-4 w-4 mr-2" />
-                Create Ticket
-              </Button>
-            </div>
-          </CardHeader>
-          {showCreateTicket && (
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="incidents">Incidents</TabsTrigger>
+          <TabsTrigger value="service-requests">Service Requests</TabsTrigger>
+          <TabsTrigger value="my-tickets">My Tickets</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          <ITSMDashboard />
+        </TabsContent>
+
+        <TabsContent value="incidents" className="space-y-6">
+          {/* Incidents Management */}
+          {user.role !== 'read-only' && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <TicketPlus className="h-5 w-5" />
+                    Incident Management
+                  </CardTitle>
+                  <Button onClick={() => setShowCreateTicket(!showCreateTicket)}>
+                    <TicketPlus className="h-4 w-4 mr-2" />
+                    Create Incident
+                  </Button>
+                </div>
+              </CardHeader>
+              {showCreateTicket && (
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Incident Title</label>
+                      <Input
+                        placeholder="Brief description of the incident"
+                        value={newTicket.title}
+                        onChange={(e) => setNewTicket(prev => ({ ...prev, title: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Description</label>
+                      <Textarea
+                        placeholder="Detailed description of the incident..."
+                        value={newTicket.description}
+                        onChange={(e) => setNewTicket(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Priority</label>
+                        <Select value={newTicket.priority} onValueChange={(value: any) => setNewTicket(prev => ({ ...prev, priority: value }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="critical">Critical</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="low">Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Category</label>
+                        <Select value={newTicket.category} onValueChange={(value: any) => setNewTicket(prev => ({ ...prev, category: value }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="alert-incident">Alert Incident</SelectItem>
+                            <SelectItem value="maintenance-task">Maintenance Task</SelectItem>
+                            <SelectItem value="change-request">Change Request</SelectItem>
+                            <SelectItem value="general">General</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleCreateTicket}>Create Incident</Button>
+                      <Button variant="outline" onClick={() => setShowCreateTicket(false)}>Cancel</Button>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          )}
+
+          {/* Incidents List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Incidents</CardTitle>
+            </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Title</label>
-                  <Input
-                    placeholder="Ticket title"
-                    value={newTicket.title}
-                    onChange={(e) => setNewTicket(prev => ({ ...prev, title: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Description</label>
-                  <Textarea
-                    placeholder="Describe the issue or task..."
-                    value={newTicket.description}
-                    onChange={(e) => setNewTicket(prev => ({ ...prev, description: e.target.value }))}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Customer Name</label>
-                    <Input
-                      placeholder="Customer/Company name"
-                      value={newTicket.customerName}
-                      onChange={(e) => setNewTicket(prev => ({ ...prev, customerName: e.target.value }))}
-                    />
+                {filteredTickets.filter(t => t.category === 'alert-incident').length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No active incidents.
                   </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Requester</label>
-                    <Input
-                      placeholder="Requester name"
-                      value={newTicket.requester}
-                      onChange={(e) => setNewTicket(prev => ({ ...prev, requester: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Priority</label>
-                    <Select value={newTicket.priority} onValueChange={(value: any) => setNewTicket(prev => ({ ...prev, priority: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="critical">Critical</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Category</label>
-                    <Select value={newTicket.category} onValueChange={(value: any) => setNewTicket(prev => ({ ...prev, category: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="alert-incident">Alert Incident</SelectItem>
-                        <SelectItem value="maintenance-task">Maintenance Task</SelectItem>
-                        <SelectItem value="change-request">Change Request</SelectItem>
-                        <SelectItem value="general">General</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleCreateTicket}>Create Ticket</Button>
-                  <Button variant="outline" onClick={() => setShowCreateTicket(false)}>Cancel</Button>
-                </div>
+                ) : (
+                  filteredTickets.filter(t => t.category === 'alert-incident').map((ticket) => (
+                    <div key={ticket.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-lg">{ticket.title}</h3>
+                            <Badge variant={getPriorityColor(ticket.priority)}>
+                              {ticket.priority.toUpperCase()}
+                            </Badge>
+                            <Badge variant={getStatusColor(ticket.status)}>
+                              {ticket.status.toUpperCase()}
+                            </Badge>
+                            <Badge variant="outline">
+                              {ticket.category.replace('-', ' ').toUpperCase()}
+                            </Badge>
+                            {ticket.alertId && (
+                              <Badge variant="outline" className="bg-red-50 text-red-700">
+                                Alert: {ticket.alertId}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <p className="text-gray-600 mb-2">{ticket.description}</p>
+                          
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span>Customer: {ticket.customerName}</span>
+                            <span>Requester: {ticket.requester}</span>
+                            <span>Created: {new Date(ticket.createdAt).toLocaleString()}</span>
+                            <span>Updated: {new Date(ticket.updatedAt).toLocaleString()}</span>
+                            {ticket.resolvedAt && (
+                              <span>Resolved: {new Date(ticket.resolvedAt).toLocaleString()}</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 ml-4">
+                          {ticket.status !== 'resolved' && ticket.status !== 'closed' && user.role !== 'read-only' && (
+                            <>
+                              {ticket.status === 'open' && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleStatusUpdate(ticket.id, 'in-progress')}
+                                >
+                                  Start Work
+                                </Button>
+                              )}
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => handleStatusUpdate(ticket.id, 'resolved')}
+                                className="flex items-center gap-1"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Mark Resolved
+                              </Button>
+                            </>
+                          )}
+                          
+                          <Button size="sm" variant="ghost">
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
-          )}
-        </Card>
-      )}
+          </Card>
+        </TabsContent>
 
-      {/* Tickets List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>My Tickets ({filteredTickets.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredTickets.length === 0 ? (
+        <TabsContent value="service-requests" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="text-center py-8 text-gray-500">
-                No tickets assigned to you.
+                Service requests functionality coming soon.
               </div>
-            ) : (
-              filteredTickets.map((ticket) => (
-                <div key={ticket.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{ticket.title}</h3>
-                        <Badge variant={getPriorityColor(ticket.priority)}>
-                          {ticket.priority.toUpperCase()}
-                        </Badge>
-                        <Badge variant={getStatusColor(ticket.status)}>
-                          {ticket.status.toUpperCase()}
-                        </Badge>
-                        <Badge variant="outline">
-                          {ticket.category.replace('-', ' ').toUpperCase()}
-                        </Badge>
-                        {ticket.alertId && (
-                          <Badge variant="outline" className="bg-red-50 text-red-700">
-                            Alert: {ticket.alertId}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <p className="text-gray-600 mb-2">{ticket.description}</p>
-                      
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span>Customer: {ticket.customerName}</span>
-                        <span>Requester: {ticket.requester}</span>
-                        <span>Created: {new Date(ticket.createdAt).toLocaleString()}</span>
-                        <span>Updated: {new Date(ticket.updatedAt).toLocaleString()}</span>
-                        {ticket.resolvedAt && (
-                          <span>Resolved: {new Date(ticket.resolvedAt).toLocaleString()}</span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2 ml-4">
-                      {ticket.status !== 'resolved' && ticket.status !== 'closed' && user.role !== 'read-only' && (
-                        <>
-                          {ticket.status === 'open' && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleStatusUpdate(ticket.id, 'in-progress')}
-                            >
-                              Start Work
-                            </Button>
-                          )}
-                          <Button 
-                            size="sm" 
-                            variant="default"
-                            onClick={() => handleStatusUpdate(ticket.id, 'resolved')}
-                            className="flex items-center gap-1"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            Mark Resolved
-                          </Button>
-                        </>
-                      )}
-                      
-                      <Button size="sm" variant="ghost">
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                    </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="my-tickets" className="space-y-6">
+          {/* My Tickets */}
+          <Card>
+            <CardHeader>
+              <CardTitle>My Tickets ({filteredTickets.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredTickets.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No tickets assigned to you.
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                ) : (
+                  filteredTickets.map((ticket) => (
+                    <div key={ticket.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-lg">{ticket.title}</h3>
+                            <Badge variant={getPriorityColor(ticket.priority)}>
+                              {ticket.priority.toUpperCase()}
+                            </Badge>
+                            <Badge variant={getStatusColor(ticket.status)}>
+                              {ticket.status.toUpperCase()}
+                            </Badge>
+                            <Badge variant="outline">
+                              {ticket.category.replace('-', ' ').toUpperCase()}
+                            </Badge>
+                            {ticket.alertId && (
+                              <Badge variant="outline" className="bg-red-50 text-red-700">
+                                Alert: {ticket.alertId}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <p className="text-gray-600 mb-2">{ticket.description}</p>
+                          
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span>Customer: {ticket.customerName}</span>
+                            <span>Requester: {ticket.requester}</span>
+                            <span>Created: {new Date(ticket.createdAt).toLocaleString()}</span>
+                            <span>Updated: {new Date(ticket.updatedAt).toLocaleString()}</span>
+                            {ticket.resolvedAt && (
+                              <span>Resolved: {new Date(ticket.resolvedAt).toLocaleString()}</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 ml-4">
+                          {ticket.status !== 'resolved' && ticket.status !== 'closed' && user.role !== 'read-only' && (
+                            <>
+                              {ticket.status === 'open' && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleStatusUpdate(ticket.id, 'in-progress')}
+                                >
+                                  Start Work
+                                </Button>
+                              )}
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => handleStatusUpdate(ticket.id, 'resolved')}
+                                className="flex items-center gap-1"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Mark Resolved
+                              </Button>
+                            </>
+                          )}
+                          
+                          <Button size="sm" variant="ghost">
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

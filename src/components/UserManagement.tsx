@@ -1,54 +1,60 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { User } from '@/types/auth';
-import { Users, UserPlus, Edit, Trash2 } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface UserManagementProps {
-  currentUser: User;
-}
-
-const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
+const UserManagement: React.FC = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([
     {
-      id: '1',
-      email: 'admin@company.com',
-      name: 'System Administrator',
+      id: 'user-1',
+      name: 'John Doe',
+      email: 'john.doe@company.com',
       role: 'administrator',
-      assignedResources: [],
-      assignedProjects: [],
-      createdAt: new Date().toISOString(),
-      isActive: true
+      assignedResources: ['resource-1', 'resource-2'],
+      createdAt: new Date().toISOString()
     },
     {
-      id: '2',
-      email: 'superuser@company.com',
-      name: 'Super User',
+      id: 'user-2',
+      name: 'Jane Smith',
+      email: 'jane.smith@company.com',
       role: 'super-user',
-      assignedResources: ['res-1', 'res-2'],
-      assignedProjects: ['proj-1'],
-      createdAt: new Date().toISOString(),
-      isActive: true
+      assignedResources: ['resource-1'],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'user-3',
+      name: 'Mike Johnson',
+      email: 'mike.johnson@company.com',
+      role: 'read-only',
+      assignedResources: ['resource-3'],
+      createdAt: new Date().toISOString()
     }
   ]);
 
-  const [showAddUser, setShowAddUser] = useState(false);
+  const [showCreateUser, setShowCreateUser] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [newUser, setNewUser] = useState({
-    email: '',
     name: '',
+    email: '',
     role: 'read-only' as const,
-    password: ''
+    assignedResources: [] as string[]
   });
 
-  const handleAddUser = () => {
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleCreateUser = () => {
     if (!newUser.name.trim() || !newUser.email.trim()) {
       toast({
         title: "Error",
@@ -58,46 +64,93 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
       return;
     }
 
-    if (users.some(u => u.email.toLowerCase() === newUser.email.toLowerCase())) {
+    if (users.some(user => user.email === newUser.email)) {
       toast({
         title: "Error",
-        description: "A user with this email already exists",
+        description: "User with this email already exists",
         variant: "destructive"
       });
       return;
     }
 
     const user: User = {
-      id: Date.now().toString(),
-      email: newUser.email.trim(),
+      id: `user-${Date.now()}`,
       name: newUser.name.trim(),
+      email: newUser.email.trim(),
       role: newUser.role,
-      assignedResources: [],
-      assignedProjects: [],
-      createdAt: new Date().toISOString(),
-      isActive: true
+      assignedResources: newUser.assignedResources,
+      createdAt: new Date().toISOString()
     };
 
     setUsers(prev => [...prev, user]);
-    setNewUser({ email: '', name: '', role: 'read-only', password: '' });
-    setShowAddUser(false);
+    setNewUser({ name: '', email: '', role: 'read-only', assignedResources: [] });
+    setShowCreateUser(false);
     
     toast({
       title: "Success",
-      description: `User "${user.name}" added successfully`
+      description: `User "${user.name}" created successfully`
     });
   };
 
-  const handleDeleteUser = (userId: string) => {
-    if (userId === currentUser.id) {
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setNewUser({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      assignedResources: user.assignedResources
+    });
+    setShowCreateUser(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!editingUser) return;
+
+    if (!newUser.name.trim() || !newUser.email.trim()) {
       toast({
         title: "Error",
-        description: "You cannot delete your own account",
+        description: "Name and email are required",
         variant: "destructive"
       });
       return;
     }
 
+    const emailExists = users.some(user => 
+      user.email === newUser.email && user.id !== editingUser.id
+    );
+
+    if (emailExists) {
+      toast({
+        title: "Error",
+        description: "User with this email already exists",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUsers(prev => prev.map(user => 
+      user.id === editingUser.id
+        ? {
+            ...user,
+            name: newUser.name.trim(),
+            email: newUser.email.trim(),
+            role: newUser.role,
+            assignedResources: newUser.assignedResources
+          }
+        : user
+    ));
+
+    setNewUser({ name: '', email: '', role: 'read-only', assignedResources: [] });
+    setEditingUser(null);
+    setShowCreateUser(false);
+    
+    toast({
+      title: "Success",
+      description: `User "${newUser.name}" updated successfully`
+    });
+  };
+
+  const handleDeleteUser = (userId: string) => {
     const userToDelete = users.find(u => u.id === userId);
     if (!userToDelete) return;
 
@@ -109,85 +162,24 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
     });
   };
 
-  const handleEditUser = (user: User) => {
-    setEditingUser(user);
-    setNewUser({
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      password: ''
-    });
-    setShowAddUser(true);
-  };
-
-  const handleUpdateUser = () => {
-    if (!editingUser) return;
-    
-    if (!newUser.name.trim() || !newUser.email.trim()) {
-      toast({
-        title: "Error",
-        description: "Name and email are required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const emailExists = users.some(u => 
-      u.id !== editingUser.id && 
-      u.email.toLowerCase() === newUser.email.toLowerCase()
-    );
-
-    if (emailExists) {
-      toast({
-        title: "Error",
-        description: "A user with this email already exists",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setUsers(prev => prev.map(user => 
-      user.id === editingUser.id 
-        ? { ...user, email: newUser.email.trim(), name: newUser.name.trim(), role: newUser.role }
-        : user
-    ));
-
+  const handleCancelEdit = () => {
+    setNewUser({ name: '', email: '', role: 'read-only', assignedResources: [] });
     setEditingUser(null);
-    setNewUser({ email: '', name: '', role: 'read-only', password: '' });
-    setShowAddUser(false);
-    
-    toast({
-      title: "Success",
-      description: "User updated successfully"
-    });
-  };
-
-  const handleCancelAddUser = () => {
-    setEditingUser(null);
-    setNewUser({ email: '', name: '', role: 'read-only', password: '' });
-    setShowAddUser(false);
+    setShowCreateUser(false);
   };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case 'administrator': return 'default';
-      case 'super-user': return 'secondary';
+      case 'administrator': return 'destructive';
+      case 'super-user': return 'default';
+      case 'read-only': return 'secondary';
       default: return 'outline';
     }
   };
 
-  if (currentUser.role !== 'administrator') {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-gray-600">You don't have permission to access user management.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-6">
+      {/* Header and Search */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -195,138 +187,138 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
               <Users className="h-5 w-5" />
               User Management
             </CardTitle>
-            <Button onClick={() => setShowAddUser(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
+            <Button onClick={() => setShowCreateUser(!showCreateUser)}>
+              <Plus className="h-4 w-4 mr-2" />
               Add User
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Assigned Projects</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={getRoleBadgeVariant(user.role)}>
-                      {user.role.replace('-', ' ').toUpperCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.isActive ? 'secondary' : 'outline'}>
-                      {user.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{user.assignedProjects.length} projects</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleEditUser(user)}
-                        title="Edit user"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleDeleteUser(user.id)}
-                        disabled={user.id === currentUser.id}
-                        className="text-red-600 hover:text-red-700 disabled:opacity-50"
-                        title={user.id === currentUser.id ? "Cannot delete your own account" : "Delete user"}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </CardContent>
       </Card>
 
-      {showAddUser && (
+      {/* Create/Edit User Form */}
+      {showCreateUser && (
         <Card>
           <CardHeader>
-            <CardTitle>{editingUser ? 'Edit User' : 'Add New User'}</CardTitle>
+            <CardTitle>{editingUser ? 'Edit User' : 'Create New User'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Name *</label>
-                <Input
-                  placeholder="Full name"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Email *</label>
-                <Input
-                  type="email"
-                  placeholder="Email address"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Name *</label>
+                  <Input
+                    placeholder="User full name"
+                    value={newUser.name}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Email *</label>
+                  <Input
+                    type="email"
+                    placeholder="user@company.com"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Role</label>
-                <Select value={newUser.role} onValueChange={(value: any) => setNewUser(prev => ({ ...prev, role: value }))}>
+                <Select 
+                  value={newUser.role} 
+                  onValueChange={(value: 'administrator' | 'super-user' | 'read-only') => 
+                    setNewUser(prev => ({ ...prev, role: value }))
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="administrator">Administrator</SelectItem>
                     <SelectItem value="super-user">Super User</SelectItem>
-                    <SelectItem value="read-only">Read-Only</SelectItem>
+                    <SelectItem value="read-only">Read Only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {!editingUser && (
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Temporary Password</label>
-                  <Input
-                    type="password"
-                    placeholder="Temporary password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2 mt-4">
-              <Button onClick={editingUser ? handleUpdateUser : handleAddUser}>
-                {editingUser ? 'Update User' : 'Add User'}
-              </Button>
-              <Button variant="outline" onClick={handleCancelAddUser}>Cancel</Button>
+              <div className="flex gap-2">
+                <Button onClick={editingUser ? handleUpdateUser : handleCreateUser}>
+                  {editingUser ? 'Update User' : 'Create User'}
+                </Button>
+                <Button variant="outline" onClick={handleCancelEdit}>Cancel</Button>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {users.length === 0 && (
+      {/* Users List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredUsers.map((user) => (
+          <Card key={user.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">{user.name}</h3>
+                  <p className="text-sm text-gray-600 mb-2">{user.email}</p>
+                  <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
+                    {user.role.replace('-', ' ')}
+                  </Badge>
+                </div>
+                <div className="flex gap-1">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => handleEditUser(user)}
+                    title="Edit user"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => handleDeleteUser(user.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Delete user"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2 text-sm text-gray-600">
+                <div>Resources: {user.assignedResources.length}</div>
+                <div>Created: {new Date(user.createdAt).toLocaleDateString()}</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filteredUsers.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Users Yet</h3>
-            <p className="text-gray-600 mb-4">Add your first user to get started</p>
-            <Button onClick={() => setShowAddUser(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add First User
-            </Button>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Users Found</h3>
+            <p className="text-gray-600 mb-4">
+              {searchTerm ? 'No users match your search criteria' : 'Create your first user to get started'}
+            </p>
+            {!searchTerm && (
+              <Button onClick={() => setShowCreateUser(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create First User
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
