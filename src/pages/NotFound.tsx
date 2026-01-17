@@ -22,9 +22,6 @@ const NotFound = () => {
       </div>
     </div>
 
-
-
-abc dpijsfkf;fjfl
   );
 };
 
